@@ -13,11 +13,25 @@ Hardware: HD44780 compatible LCD text display
 #include <util/delay.h>
 #include "lcd.h"
 #include <avr/interrupt.h>
+#include <stdio.h>
+
+void wait_until_key_pressed(void);
+int get_random_number_between(int lower_inclusive, int upper_inclusive);
 
 ISR(INT0_vect) {
 	PORTB = 0xFF;
 	_delay_ms(2000);
 	PORTB = 0x00;
+}
+
+ISR(TIMER0_COMPA_vect)
+{
+	_delay_ms(1500);
+	int random_number = get_random_number_between(0, 255);
+ OCR0A = 124000;
+
+	
+	PORTB = random_number;
 }
 
 
@@ -29,7 +43,7 @@ static const PROGMEM unsigned char copyRightChar[] =
 {
 	//0x07, 0x08, 0x13, 0x14, 0x14, 0x13, 0x08, 0x07,
 	//0x00, 0x10, 0x08, 0x08, 0x08, 0x08, 0x10, 0x00
-0b00000,
+	0b00000,
 	0b11011,
 	0b01110,
 	0b10101,
@@ -43,7 +57,6 @@ static const PROGMEM unsigned char copyRightChar[] =
 /*
 ** function prototypes
 */ 
-void wait_until_key_pressed(void);
 
 
 void wait_until_key_pressed(void)
@@ -77,109 +90,38 @@ int main(void)
     unsigned char i;
     
     
-    DDRD &=~ (1 << PD2);        /* Pin PD2 input              */
-    PORTD |= (1 << PD2);        /* Pin PD2 pull-up enabled    */
+    DDRD &=~ (1 << PD0);        /* Pin PD2 input              */
+    PORTD |= (1 << PD0);        /* Pin PD2 pull-up enabled    */
 	DDRB = 0xff;
 	EIMSK = 1<<INT0;
+	
+	 TCCR0A = (1<<WGM01); // CTC Modus
+	 TCCR0B |= (1<<CS01); // Prescaler 8
+	 // ((1000000/8)/1000) = 125
+	 OCR0A = 124000;
+
+	 // Compare Interrupt erlauben
+	 TIMSK0 |= (1<<OCIE0A);
+
 	MCUCR = 1<<ISC01 | 1<<ISC00;
-	PORTB = 0xff; // ff aus
+	PORTB = 0x88; // ff aus
 
 
     /* initialize display, cursor off */
     lcd_init(LCD_DISP_ON);
 
     for (;;) {                           /* loop forever */
-        /* 
-         * Test 1:  write text to display
-         */
 
-        /* clear display and home cursor */
-        //lcd_clrscr();
-//
-		///* move cursor to position 6 on line 1 */
-		//lcd_gotoxy(0,0);
-        //
-        ///* put string to display (line 1) with linefeed */
-        //lcd_puts("Hi Lukas, Phil\n");
-//
-		///* move cursor to position 6 on line 1 */
-		//lcd_gotoxy(2,1);
-//
-        ///* cursor is now on second line, write second line */
-        //lcd_puts("Cuong, Long");
-        //
-        ///* wait until push button PD2 (INT0) is pressed */
-        //wait_until_key_pressed();
-        //
-        //
-        ///*
-         //* Test 2: use lcd_command() to turn on cursor
-         //*/
-		//
-		        ///* clear display and home cursor */
-		        //lcd_clrscr();
-//
-		        ///* move cursor to position 6 on line 1 */
-		        //lcd_gotoxy(0,0);
-        //
-        ///* turn on cursor */
-        //lcd_command(LCD_DISP_ON_CURSOR);
-//
-        ///* put string */
-        //lcd_puts( "CurOn");
-        //
-        ///* wait until push button PD2 (INT0) is pressed */
-        //wait_until_key_pressed();
-//
-//
-        ///*
-         //* Test 3: display shift
-         //*/
-        //
-        //lcd_clrscr();     /* clear display home cursor */
-//
-        ///* put string from program memory to display */
-        //lcd_puts_P( "Line 1 longer than 14 characters\n" );
-        //lcd_puts_P( "Line 2 longer than 14 characters" );
-        //
-        ///* move BOTH lines one position to the left */
-        //lcd_command(LCD_MOVE_DISP_LEFT);
-        //
-        ///* wait until push button PD2 (INT0) is pressed */
-        //wait_until_key_pressed();
-//
-        ///* turn off cursor */
-        //lcd_command(LCD_DISP_ON);
-        //
-        //
-        ///*
-         //*   Test: Display integer values
-         //*/
-        //
-        //lcd_clrscr();   /* clear display home cursor */
-        //
-        ///* convert interger into string */
-        //itoa( num , buffer, 10);
-        //
-        ///* put converted string to display */
-        //lcd_puts(buffer);
-        //
-        ///* wait until push button PD2 (INT0) is pressed */
-        //wait_until_key_pressed();
-        //
-        //
-        ///*
-         //*  Test: Display userdefined characters
-         //*/
 
        lcd_clrscr();   /* clear display home cursor */
        
-       lcd_puts("Copyright: ");
+       lcd_puts("Highscore: ");
        
        /*
         * load two userdefined characters from program memory
         * into LCD controller CG RAM location 0 and 1
         */
+
        lcd_command(_BV(LCD_CGRAM));  /* set CG RAM start address 0 */
        for(i=0; i<8; i++)
        {
