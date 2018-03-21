@@ -24,7 +24,7 @@ char* get_int_as_string(int number);
 void print_score(void);
 void draw_heart(void);
 void read_custom_chars(void);
-
+void print_lives(void);
 
 int mole_hit = 0;
 int mole_position;
