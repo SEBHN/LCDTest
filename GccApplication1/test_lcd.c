@@ -15,55 +15,11 @@ Hardware: HD44780 compatible LCD text display
 #include <avr/interrupt.h>
 #include <stdio.h>
 
-void wait_until_key_pressed(void);
-int get_random_number_between(int lower_inclusive, int upper_inclusive);
-void set_next_mole_position(void);
-void draw_mole(void);
-uint8_t correct_button_pressed(void);
-char* get_int_as_string(int number);
-void print_score(void);
-void draw_heart(void);
-void read_custom_chars(void);
-void print_lives(void);
-
-int mole_hit = 0;
-int mole_position;
-int score = 0;
-int lives = 3;
-
-
-ISR(INT0_vect) {	
-	if(correct_button_pressed())
-	{
-		mole_hit = 1;
-		score = score + 1;		
-	}
-	else
-	{
-		lives--;
-	}
-}
-
-ISR(TIMER1_OVF_vect)
-{
-	TCNT1 = 61500;
-	if(!mole_hit)
-	{
-		lives--;
-	}
-	mole_hit = 0;
-	set_next_mole_position();
-}
-
-
-
 /*
 ** constant definitions
 */
 static const PROGMEM unsigned char mole[] =
 {
-	//0x07, 0x08, 0x13, 0x14, 0x14, 0x13, 0x08, 0x07,
-	//0x00, 0x10, 0x08, 0x08, 0x08, 0x08, 0x10, 0x00
 	0b00000,
 	0b11011,
 	0b01110,
@@ -86,11 +42,50 @@ static const PROGMEM unsigned char heart[] =
 	0b00000
 };
 
+int mole_hit = 0;
+int mole_position;
+int score = 0;
+int lives = 3;
 
 /*
 ** function prototypes
-*/ 
+*/
+void wait_until_key_pressed(void);
+int get_random_number_between(int lower_inclusive, int upper_inclusive);
+void set_next_mole_position(void);
+void draw_mole(void);
+uint8_t correct_button_pressed(void);
+char* get_int_as_string(int number);
+void print_score(void);
+void draw_heart(void);
+void read_custom_chars(void);
+void print_lives(void);
 
+
+
+ISR(INT0_vect) {	
+	wait_until_key_pressed();
+	if(correct_button_pressed())
+	{
+		mole_hit = 1;
+		score = score + 1;		
+	}
+	else
+	{
+		lives--;
+	}
+}
+
+ISR(TIMER1_OVF_vect)
+{
+	TCNT1 = 61500;
+	if(!mole_hit)
+	{
+		lives--;
+	}
+	mole_hit = 0;
+	set_next_mole_position();
+}
 
 void wait_until_key_pressed(void)
 {
@@ -193,7 +188,7 @@ int main(void)
 	 TCCR1A = 0;
 	 TCCR1B = 0;
 
-	 TCNT1 = 58335;            // Timer nach obiger Rechnung vorbelegen
+	 TCNT1 = 61500;            // Timer nach obiger Rechnung vorbelegen
 	 TCCR1B |= (1 << CS12);    // 256 als Prescale-Wert spezifizieren
 	 TIMSK1 |= (1 << TOIE1);   // Timer Overflow Interrupt aktivieren
 	 
