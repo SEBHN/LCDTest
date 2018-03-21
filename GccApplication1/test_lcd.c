@@ -17,7 +17,6 @@ Hardware: HD44780 compatible LCD text display
 
 void wait_until_key_pressed(void);
 int get_random_number_between(int lower_inclusive, int upper_inclusive);
-void set_respawn_time_ms(int time);
 void set_next_mole_position(void);
 void draw_mole(void);
 uint8_t correct_button_pressed(void);
@@ -26,37 +25,28 @@ void print_score(void);
 void draw_heart(void);
 void read_custom_chars(void);
 
-int respawn_time_ms = 1000;
+
 int mole_hit = 0;
 int mole_position;
 int score = 0;
 int lives = 3;
-int button_is_pressed = 0;
 
 
-ISR(INT0_vect) {
-	if(!button_is_pressed)
+ISR(INT0_vect) {	
+	if(correct_button_pressed())
 	{
-		button_is_pressed = 1;
-		if(correct_button_pressed())
-		{
-			mole_hit = 1;
-			score = score + 1;		
-		}
-		else
-		{
-			lives--;
-		}
-		button_is_pressed = 0;
+		mole_hit = 1;
+		score = score + 1;		
+	}
+	else
+	{
+		lives--;
 	}
 }
 
 ISR(TIMER1_OVF_vect)
 {
-	//_delay_ms(1500);
-	int random_number = get_random_number_between(0, 255);
-	TCNT1 = 61500;    
-	PORTB = random_number;
+	TCNT1 = 61500;
 	if(!mole_hit)
 	{
 		lives--;
@@ -119,11 +109,6 @@ void wait_until_key_pressed(void)
 int get_random_number_between (int lower_inclusive, int upper_inclusive)
 {
 	return lower_inclusive + rand() % (upper_inclusive + 1 - lower_inclusive);
-}
-
-void set_respawn_time_ms(int time)
-{
-	respawn_time_ms = time;
 }
 
 void set_next_mole_position(void)
