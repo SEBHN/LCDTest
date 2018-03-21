@@ -63,17 +63,64 @@ void print_lives(void);
 
 
 
-ISR(INT0_vect) {	
-	wait_until_key_pressed();
-	if(correct_button_pressed())
+ISR(INT0_vect) {
+	//wait_until_key_pressed();	
+
+	if (!(PINC & (1<<PC0)) && mole_position == 0)
 	{
 		mole_hit = 1;
-		score = score + 1;		
+		score = score + 1;
+	}
+	else if (!(PINC & (1<<PC1)) && mole_position == 2)
+	{
+		mole_hit = 1;
+		score = score + 1;
+	}
+	else if (!(PINC & (1<<PC2)) && mole_position == 4)
+	{
+		mole_hit = 1;
+		score = score + 1;
+	}
+	else if (!(PINC & (1<<PC3)) && mole_position == 6)
+	{
+		mole_hit = 1;
+		score = score + 1;
+	}
+	else if (!(PINC & (1<<PC4)) && mole_position == 8)
+	{
+		mole_hit = 1;
+		score = score + 1;
+	}
+	else if (!(PINC & (1<<PC5)) && mole_position == 10)
+	{
+		mole_hit = 1;
+		score = score + 1;
+	}
+	else if (!(PINC & (1<<PC6)) && mole_position == 12)
+	{
+		mole_hit = 1;
+		score = score + 1;
+	}
+	else if (!(PINC & (1<<PC7)) && mole_position == 14)
+	{
+		mole_hit = 1;
+		score = score + 1;
 	}
 	else
 	{
-		lives--;
+		//lives--;
 	}
+
+	//if(correct_button_pressed())
+	//{
+		//mole_hit = 1;
+		////score = score + 1;		
+		//
+	//}
+	//else
+	//{
+		//lives--;
+	//}
 }
 
 ISR(TIMER1_OVF_vect)
@@ -85,6 +132,7 @@ ISR(TIMER1_OVF_vect)
 	}
 	mole_hit = 0;
 	set_next_mole_position();
+	//score = mole_position;
 }
 
 void wait_until_key_pressed(void)
@@ -108,7 +156,7 @@ int get_random_number_between (int lower_inclusive, int upper_inclusive)
 
 void set_next_mole_position(void)
 {
-	mole_position = get_random_number_between(0, 7) * 2;
+	mole_position = get_random_number_between(0, 1) * 2;
 }
 
 void draw_mole(void)
@@ -179,6 +227,8 @@ int main(void)
     PORTD |= (1 << PD0);        /* Pin PD2 pull-up enabled    */
 	DDRB = 0xff;
 	EIMSK = 1<<INT0;
+	    DDRC = 0;        /* Pin PD2 input              */
+	    PORTC |= (1 << PC0);        /* Pin PD2 pull-up enabled    */
 	
 /*	TCNT0 = 0;
 	TCCR0B |= (1<<CS02) | (1<<CS00); // PRESCALER 1024
@@ -192,7 +242,7 @@ int main(void)
 	 TCCR1B |= (1 << CS12);    // 256 als Prescale-Wert spezifizieren
 	 TIMSK1 |= (1 << TOIE1);   // Timer Overflow Interrupt aktivieren
 	 
-	PORTB = 0x88; // ff aus
+	PORTB = 0xff; // ff aus
 
 
     /* initialize display, cursor off */
@@ -208,7 +258,49 @@ int main(void)
 	   {
 		   draw_mole();        
 	   }
-	   _delay_ms(100);   
+	   _delay_ms(100); 
+	   PORTB=PINC; 
+	   
+	   	if (!(PINC & (1<<PC0)) && mole_position == 0 && mole_hit == 0)
+	   	{
+		   	mole_hit = 1;
+		   	score = score + 1;
+	   	}
+	   	else if (!(PINC & (1<<PC1)) && mole_position == 2 && mole_hit == 0)
+	   	{
+		   	mole_hit = 1;
+		   	score = score + 1;
+	   	}
+	   	else if (!(PINC & (1<<PC2)) && mole_position == 4 && mole_hit == 0)
+	   	{
+		   	mole_hit = 1;
+		   	score = score + 1;
+	   	}
+	   	else if (!(PINC & (1<<PC3)) && mole_position == 6 && mole_hit == 0)
+	   	{
+		   	mole_hit = 1;
+		   	score = score + 1;
+	   	}
+	   	else if (!(PINC & (1<<PC4)) && mole_position == 8 && mole_hit == 0)
+	   	{
+		   	mole_hit = 1;
+		   	score = score + 1;
+	   	}
+	   	else if (!(PINC & (1<<PC5)) && mole_position == 10 && mole_hit == 0)
+	   	{
+		   	mole_hit = 1;
+		   	score = score + 1;
+	   	}
+	   	else if (!(PINC & (1<<PC6)) && mole_position == 12 && mole_hit == 0)
+	   	{
+		   	mole_hit = 1;
+		   	score = score + 1;
+	   	}
+	   	else if (!(PINC & (1<<PC7)) && mole_position == 14 && mole_hit == 0)
+	   	{
+		   	mole_hit = 1;
+		   	score = score + 1;
+	   	}
     } while (lives > 0);
 	
 	lcd_clrscr();   /* clear display home cursor */
