@@ -156,7 +156,7 @@ int get_random_number_between (int lower_inclusive, int upper_inclusive)
 
 void set_next_mole_position(void)
 {
-	mole_position = get_random_number_between(0, 1) * 2;
+	mole_position = get_random_number_between(0, 7) * 2;
 }
 
 void draw_mole(void)

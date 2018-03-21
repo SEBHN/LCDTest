@@ -518,12 +518,12 @@ uint8_t correct_button_pressed(void)
 
 000003ee <set_next_mole_position>:
  3ee:	0e 94 6b 04 	call	0x8d6	; 0x8d6 <rand>
- 3f2:	81 70       	andi	r24, 0x01	; 1
+ 3f2:	87 70       	andi	r24, 0x07	; 7
  3f4:	90 78       	andi	r25, 0x80	; 128
  3f6:	99 23       	and	r25, r25
  3f8:	24 f4       	brge	.+8      	; 0x402 <__LOCK_REGION_LENGTH__+0x2>
  3fa:	01 97       	sbiw	r24, 0x01	; 1
- 3fc:	8e 6f       	ori	r24, 0xFE	; 254
+ 3fc:	88 6f       	ori	r24, 0xF8	; 248
  3fe:	9f 6f       	ori	r25, 0xFF	; 255
  400:	01 96       	adiw	r24, 0x01	; 1
  402:	88 0f       	add	r24, r24
