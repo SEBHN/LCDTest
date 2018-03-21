@@ -17,21 +17,52 @@ Hardware: HD44780 compatible LCD text display
 
 void wait_until_key_pressed(void);
 int get_random_number_between(int lower_inclusive, int upper_inclusive);
+void set_respawn_time_ms(int time);
+void set_next_mole_position(void);
+void draw_mole(void);
+uint8_t correct_button_pressed(void);
+char* get_int_as_string(int number);
+void print_score(void);
+void draw_heart(void);
+void read_custom_chars(void);
+
+int respawn_time_ms = 1000;
+int mole_hit = 0;
+int mole_position;
+int score = 0;
+int lives = 3;
+int button_is_pressed = 0;
+
 
 ISR(INT0_vect) {
-	PORTB = 0xFF;
-	_delay_ms(2000);
-	PORTB = 0x00;
+	if(!button_is_pressed)
+	{
+		button_is_pressed = 1;
+		if(correct_button_pressed())
+		{
+			mole_hit = 1;
+			score = score + 1;		
+		}
+		else
+		{
+			lives--;
+		}
+		button_is_pressed = 0;
+	}
 }
 
-ISR(TIMER0_COMPA_vect)
+ISR(TIMER1_OVF_vect)
 {
-	_delay_ms(1500);
+	//_delay_ms(1500);
 	int random_number = get_random_number_between(0, 255);
- OCR0A = 124000;
-
-	
+	TCNT1 = 61500;    
 	PORTB = random_number;
+	if(!mole_hit)
+	{
+		lives--;
+	}
+	mole_hit = 0;
+	set_next_mole_position();
 }
 
 
@@ -39,7 +70,7 @@ ISR(TIMER0_COMPA_vect)
 /*
 ** constant definitions
 */
-static const PROGMEM unsigned char copyRightChar[] =
+static const PROGMEM unsigned char mole[] =
 {
 	//0x07, 0x08, 0x13, 0x14, 0x14, 0x13, 0x08, 0x07,
 	//0x00, 0x10, 0x08, 0x08, 0x08, 0x08, 0x10, 0x00
@@ -49,6 +80,18 @@ static const PROGMEM unsigned char copyRightChar[] =
 	0b10101,
 	0b11111,
 	0b01110,
+	0b00000,
+	0b00000
+};
+
+static const PROGMEM unsigned char heart[] =
+{
+	0b00000,
+	0b01010,
+	0b11111,
+	0b11111,
+	0b01110,
+	0b00100,
 	0b00000,
 	0b00000
 };
@@ -78,16 +121,78 @@ int get_random_number_between (int lower_inclusive, int upper_inclusive)
 	return lower_inclusive + rand() % (upper_inclusive + 1 - lower_inclusive);
 }
 
+void set_respawn_time_ms(int time)
+{
+	respawn_time_ms = time;
+}
+
+void set_next_mole_position(void)
+{
+	mole_position = get_random_number_between(0, 7) * 2;
+}
+
+void draw_mole(void)
+{	
+	lcd_gotoxy(mole_position, 1);
+	lcd_putc(0);
+}
+
+void draw_heart(void)
+{	
+	lcd_gotoxy(15, 0);
+	lcd_putc(1);
+}
+
+uint8_t correct_button_pressed(void)
+{
+	//TODO: Check if correct button has been pressed. 
+	//Use mole_position for comparison
+	return 1;
+}
+
+char* get_int_as_string(int number)
+{
+	char str[10];
+	char *str_ptr = str;
+	sprintf(str, "%d", number);
+	return str_ptr;
+}
+
+void print_score(void)
+{
+	lcd_gotoxy(0, 0);
+	lcd_puts("Score:");
+	lcd_gotoxy(7, 0);
+	lcd_puts(get_int_as_string(score));
+}
+
+void print_lives(void)
+{
+	lcd_gotoxy(14, 0);
+	lcd_puts(get_int_as_string(lives));
+	draw_heart();
+}
+
+void read_custom_chars(void)
+{
+	lcd_command(_BV(LCD_CGRAM));  /* set CG RAM start address 0 */
+	for(int i=0; i<8; i++)
+	{
+		lcd_data(pgm_read_byte_near(&mole[i]));
+	}
+	for(int i=0; i<8; i++)
+	{
+		lcd_data(pgm_read_byte_near(&heart[i]));
+	}
+}
+
+
 
 int main(void)
 {
 	cli();
-	//PORTD = 0x00;
 	PORTA = 0xff;
 	asm("sei");
-    char buffer[7];
-    int  num=134;
-    unsigned char i;
     
     
     DDRD &=~ (1 << PD0);        /* Pin PD2 input              */
@@ -95,54 +200,40 @@ int main(void)
 	DDRB = 0xff;
 	EIMSK = 1<<INT0;
 	
-	 TCCR0A = (1<<WGM01); // CTC Modus
-	 TCCR0B |= (1<<CS01); // Prescaler 8
-	 // ((1000000/8)/1000) = 125
-	 OCR0A = 124000;
+/*	TCNT0 = 0;
+	TCCR0B |= (1<<CS02) | (1<<CS00); // PRESCALER 1024
+	TIMSK0 = (1<<TOIE0);
+	MCUCR = 1<<ISC01 | 1<<ISC00;*/
+	
+	 TCCR1A = 0;
+	 TCCR1B = 0;
 
-	 // Compare Interrupt erlauben
-	 TIMSK0 |= (1<<OCIE0A);
-
-	MCUCR = 1<<ISC01 | 1<<ISC00;
+	 TCNT1 = 58335;            // Timer nach obiger Rechnung vorbelegen
+	 TCCR1B |= (1 << CS12);    // 256 als Prescale-Wert spezifizieren
+	 TIMSK1 |= (1 << TOIE1);   // Timer Overflow Interrupt aktivieren
+	 
 	PORTB = 0x88; // ff aus
 
 
     /* initialize display, cursor off */
     lcd_init(LCD_DISP_ON);
+	read_custom_chars();
+	set_next_mole_position();
 
-    for (;;) {                           /* loop forever */
-
-
-       lcd_clrscr();   /* clear display home cursor */
-       
-       lcd_puts("Highscore: ");
-       
-       /*
-        * load two userdefined characters from program memory
-        * into LCD controller CG RAM location 0 and 1
-        */
-
-       lcd_command(_BV(LCD_CGRAM));  /* set CG RAM start address 0 */
-       for(i=0; i<8; i++)
-       {
-           lcd_data(pgm_read_byte_near(&copyRightChar[i]));
-       }
-       
-       /* move cursor to position 0 on line 2 */
-       /* Note: this switched back to DD RAM adresses */
-       lcd_gotoxy(0,1);
-       
-       /* display user defined (c), built using two user defined chars */
-	   
-       lcd_putc(0);
-	   _delay_ms(1000);
-	   lcd_gotoxy(2,1);
-	   lcd_putc(0);
-       //lcd_putc(1);
-       
-
-       /* wait until push button PD2 (INT0) is pressed */
-       //wait_until_key_pressed();
-       //PORTB = PORTA;       
-    }
+    do {                           /* loop forever */
+       lcd_clrscr();   /* clear display home cursor */       
+       print_score();
+	   print_lives();
+	   if(!mole_hit)
+	   {
+		   draw_mole();        
+	   }
+	   _delay_ms(100);   
+    } while (lives > 0);
+	
+	lcd_clrscr();   /* clear display home cursor */
+	print_score();
+	print_lives();
+	lcd_gotoxy(3, 1);
+	lcd_puts("GAME OVER");
 }
