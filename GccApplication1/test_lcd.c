@@ -46,6 +46,8 @@ int mole_hit = 0;
 int mole_position;
 int score = 0;
 int lives = 3;
+int fail = 0;
+int next = 1;
 
 /*
 ** function prototypes
@@ -66,50 +68,55 @@ void print_lives(void);
 ISR(INT0_vect) {
 	//wait_until_key_pressed();	
 
-	if (!(PINC & (1<<PC0)) && mole_position == 0)
-	{
-		mole_hit = 1;
-		score = score + 1;
-	}
-	else if (!(PINC & (1<<PC1)) && mole_position == 2)
-	{
-		mole_hit = 1;
-		score = score + 1;
-	}
-	else if (!(PINC & (1<<PC2)) && mole_position == 4)
-	{
-		mole_hit = 1;
-		score = score + 1;
-	}
-	else if (!(PINC & (1<<PC3)) && mole_position == 6)
-	{
-		mole_hit = 1;
-		score = score + 1;
-	}
-	else if (!(PINC & (1<<PC4)) && mole_position == 8)
-	{
-		mole_hit = 1;
-		score = score + 1;
-	}
-	else if (!(PINC & (1<<PC5)) && mole_position == 10)
-	{
-		mole_hit = 1;
-		score = score + 1;
-	}
-	else if (!(PINC & (1<<PC6)) && mole_position == 12)
-	{
-		mole_hit = 1;
-		score = score + 1;
-	}
-	else if (!(PINC & (1<<PC7)) && mole_position == 14)
-	{
-		mole_hit = 1;
-		score = score + 1;
-	}
-	else
-	{
-		//lives--;
-	}
+	//if (!(PINC & (1<<PC0)) && mole_position == 0)
+	//{
+		//mole_hit = 1;
+		//score = score + 1;
+	//}
+	//else if (!(PINC & (1<<PC1)) && mole_position == 2)
+	//{
+		//mole_hit = 1;
+		//score = score + 1;
+	//}
+	//else if (!(PINC & (1<<PC2)) && mole_position == 4)
+	//{
+		//mole_hit = 1;
+		//score = score + 1;
+	//}
+	//else if (!(PINC & (1<<PC3)) && mole_position == 6)
+	//{
+		//mole_hit = 1;
+		//score = score + 1;
+	//}
+	//else if (!(PINC & (1<<PC4)) && mole_position == 8)
+	//{
+		//mole_hit = 1;
+		//score = score + 1;
+	//}
+	//else if (!(PINC & (1<<PC5)) && mole_position == 10)
+	//{
+		//mole_hit = 1;
+		//score = score + 1;
+	//}
+	//else if (!(PINC & (1<<PC6)) && mole_position == 12)
+	//{
+		//mole_hit = 1;
+		//score = score + 1;
+	//}
+	//else if (!(PINC & (1<<PC7)) && mole_position == 14)
+	//{
+		//mole_hit = 1;
+		//score = score + 1;
+	//}
+	//else if ((PINC & (1<<PC0)) && (PINC & (1<<PC1)) && (PINC & (1<<PC2)) && (PINC & (1<<PC3)) 
+	//&& (PINC & (1<<PC4)) && (PINC & (1<<PC5)) && (PINC & (1<<PC6)) && (PINC & (1<<PC7))) 
+	//{
+		//
+	//}
+	//else
+	//{
+		//score--;
+	//}
 
 	//if(correct_button_pressed())
 	//{
@@ -126,12 +133,20 @@ ISR(INT0_vect) {
 ISR(TIMER1_OVF_vect)
 {
 	TCNT1 = 61500;
-	if(!mole_hit)
+	if(!mole_hit && score > 0)
 	{
-		lives--;
+		score--;
 	}
 	mole_hit = 0;
+	if (fail==1 && !mole_hit) 
+	{
+		fail = 0;
+		lives--;
+	}
+	
 	set_next_mole_position();
+	
+	next = 1;
 	//score = mole_position;
 }
 
@@ -260,31 +275,36 @@ int main(void)
 	   }
 	   _delay_ms(100); 
 	   PORTB=PINC; 
-	   
+	   if (next == 1) {
 	   	if (!(PINC & (1<<PC0)) && mole_position == 0 && mole_hit == 0)
 	   	{
 		   	mole_hit = 1;
 		   	score = score + 1;
+			   next = 0;
 	   	}
 	   	else if (!(PINC & (1<<PC1)) && mole_position == 2 && mole_hit == 0)
 	   	{
 		   	mole_hit = 1;
 		   	score = score + 1;
+			   next = 0;
 	   	}
 	   	else if (!(PINC & (1<<PC2)) && mole_position == 4 && mole_hit == 0)
 	   	{
 		   	mole_hit = 1;
 		   	score = score + 1;
+			   next = 0;
 	   	}
 	   	else if (!(PINC & (1<<PC3)) && mole_position == 6 && mole_hit == 0)
 	   	{
 		   	mole_hit = 1;
 		   	score = score + 1;
+			   next = 0;
 	   	}
 	   	else if (!(PINC & (1<<PC4)) && mole_position == 8 && mole_hit == 0)
 	   	{
 		   	mole_hit = 1;
 		   	score = score + 1;
+			   next = 0;
 	   	}
 	   	else if (!(PINC & (1<<PC5)) && mole_position == 10 && mole_hit == 0)
 	   	{
@@ -295,12 +315,29 @@ int main(void)
 	   	{
 		   	mole_hit = 1;
 		   	score = score + 1;
+			   next = 0;
 	   	}
 	   	else if (!(PINC & (1<<PC7)) && mole_position == 14 && mole_hit == 0)
 	   	{
 		   	mole_hit = 1;
 		   	score = score + 1;
+			   next = 0;
 	   	}
+		else if ((PINC & (1<<PC0)) && (PINC & (1<<PC1)) && (PINC & (1<<PC2)) && (PINC & (1<<PC3))
+		&& (PINC & (1<<PC4)) && (PINC & (1<<PC5)) && (PINC & (1<<PC6)) && (PINC & (1<<PC7)))
+		{
+			   	
+		}
+		else 
+		{
+			next = 0;
+			if (mole_hit == 0) 
+			{
+				fail = 1;
+			}
+		}
+		
+	   }
     } while (lives > 0);
 	
 	lcd_clrscr();   /* clear display home cursor */
