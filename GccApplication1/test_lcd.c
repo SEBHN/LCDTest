@@ -132,7 +132,7 @@ ISR(INT0_vect) {
 
 ISR(TIMER1_OVF_vect)
 {
-	TCNT1 = 61500;
+	TCNT1 = 56500;
 	if(!mole_hit && score > 0)
 	{
 		score--;
@@ -241,7 +241,7 @@ int main(void)
     DDRD &=~ (1 << PD0);        /* Pin PD2 input              */
     PORTD |= (1 << PD0);        /* Pin PD2 pull-up enabled    */
 	DDRB = 0xff;
-	EIMSK = 1<<INT0;
+	//EIMSK = 1<<INT0;
 	    DDRC = 0;        /* Pin PD2 input              */
 	    PORTC |= (1 << PC0);        /* Pin PD2 pull-up enabled    */
 	
@@ -253,7 +253,7 @@ int main(void)
 	 TCCR1A = 0;
 	 TCCR1B = 0;
 
-	 TCNT1 = 61500;            // Timer nach obiger Rechnung vorbelegen
+	 TCNT1 = 56500;            // Timer nach obiger Rechnung vorbelegen
 	 TCCR1B |= (1 << CS12);    // 256 als Prescale-Wert spezifizieren
 	 TIMSK1 |= (1 << TOIE1);   // Timer Overflow Interrupt aktivieren
 	 
