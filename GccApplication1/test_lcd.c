@@ -43,11 +43,15 @@ static const PROGMEM unsigned char heart[] =
 };
 
 int mole_hit = 0;
-int mole_position;
+int mole_position = 0;
 int score = 0;
 int lives = 3;
 int fail = 0;
 int next = 1;
+int invert_buttons = 1;
+int respawn_time_ms = 1000;
+int compare_value;
+double frequency = 8000000.0d;
 
 /*
 ** function prototypes
@@ -62,77 +66,11 @@ void print_score(void);
 void draw_heart(void);
 void read_custom_chars(void);
 void print_lives(void);
+void set_timer_count_start(void);
 
 
-
-ISR(INT0_vect) {
-	//wait_until_key_pressed();	
-
-	//if (!(PINC & (1<<PC0)) && mole_position == 0)
-	//{
-		//mole_hit = 1;
-		//score = score + 1;
-	//}
-	//else if (!(PINC & (1<<PC1)) && mole_position == 2)
-	//{
-		//mole_hit = 1;
-		//score = score + 1;
-	//}
-	//else if (!(PINC & (1<<PC2)) && mole_position == 4)
-	//{
-		//mole_hit = 1;
-		//score = score + 1;
-	//}
-	//else if (!(PINC & (1<<PC3)) && mole_position == 6)
-	//{
-		//mole_hit = 1;
-		//score = score + 1;
-	//}
-	//else if (!(PINC & (1<<PC4)) && mole_position == 8)
-	//{
-		//mole_hit = 1;
-		//score = score + 1;
-	//}
-	//else if (!(PINC & (1<<PC5)) && mole_position == 10)
-	//{
-		//mole_hit = 1;
-		//score = score + 1;
-	//}
-	//else if (!(PINC & (1<<PC6)) && mole_position == 12)
-	//{
-		//mole_hit = 1;
-		//score = score + 1;
-	//}
-	//else if (!(PINC & (1<<PC7)) && mole_position == 14)
-	//{
-		//mole_hit = 1;
-		//score = score + 1;
-	//}
-	//else if ((PINC & (1<<PC0)) && (PINC & (1<<PC1)) && (PINC & (1<<PC2)) && (PINC & (1<<PC3)) 
-	//&& (PINC & (1<<PC4)) && (PINC & (1<<PC5)) && (PINC & (1<<PC6)) && (PINC & (1<<PC7))) 
-	//{
-		//
-	//}
-	//else
-	//{
-		//score--;
-	//}
-
-	//if(correct_button_pressed())
-	//{
-		//mole_hit = 1;
-		////score = score + 1;		
-		//
-	//}
-	//else
-	//{
-		//lives--;
-	//}
-}
-
-ISR(TIMER1_OVF_vect)
+ISR(TIMER1_COMPA_vect)
 {
-	TCNT1 = 56500;
 	if(!mole_hit && score > 0)
 	{
 		score--;
@@ -144,10 +82,8 @@ ISR(TIMER1_OVF_vect)
 		lives--;
 	}
 	
-	set_next_mole_position();
-	
+	set_next_mole_position();	
 	next = 1;
-	//score = mole_position;
 }
 
 void wait_until_key_pressed(void)
@@ -171,7 +107,7 @@ int get_random_number_between (int lower_inclusive, int upper_inclusive)
 
 void set_next_mole_position(void)
 {
-	mole_position = get_random_number_between(0, 7) * 2;
+	mole_position = (get_random_number_between(1, 7) * 2 + mole_position) % 16;
 }
 
 void draw_mole(void)
@@ -229,6 +165,13 @@ void read_custom_chars(void)
 	}
 }
 
+void set_timer_count_start()
+{
+	double respawn_ratio = (double) respawn_time_ms / 1000.0d;
+	compare_value =  (int) (frequency / 1024.0 / 8.0 * respawn_ratio);
+	//compare_value = 976;
+}
+
 
 
 int main(void)
@@ -241,21 +184,16 @@ int main(void)
     DDRD &=~ (1 << PD0);        /* Pin PD2 input              */
     PORTD |= (1 << PD0);        /* Pin PD2 pull-up enabled    */
 	DDRB = 0xff;
-	//EIMSK = 1<<INT0;
-	    DDRC = 0;        /* Pin PD2 input              */
-	    PORTC |= (1 << PC0);        /* Pin PD2 pull-up enabled    */
 	
-/*	TCNT0 = 0;
-	TCCR0B |= (1<<CS02) | (1<<CS00); // PRESCALER 1024
-	TIMSK0 = (1<<TOIE0);
-	MCUCR = 1<<ISC01 | 1<<ISC00;*/
+	DDRC = 0;        /* Pin PD2 input              */
+	PORTC |= (1 << PC0);        /* Pin PD2 pull-up enabled    */
 	
-	 TCCR1A = 0;
-	 TCCR1B = 0;
-
-	 TCNT1 = 56500;            // Timer nach obiger Rechnung vorbelegen
-	 TCCR1B |= (1 << CS12);    // 256 als Prescale-Wert spezifizieren
-	 TIMSK1 |= (1 << TOIE1);   // Timer Overflow Interrupt aktivieren
+	set_timer_count_start();
+	OCR1A = compare_value;         
+	TCCR1A = (1<<COM1A0);                // CTC mode, toggle OC1A on compare match
+	TCCR1B = (1<<CS12)|(1<<CS10)         // Start Timer1 with prescaler 1024
+	|(1<<WGM12);
+	TIMSK1=(1<<OCIE1A);  
 	 
 	PORTB = 0xff; // ff aus
 
@@ -265,8 +203,8 @@ int main(void)
 	read_custom_chars();
 	set_next_mole_position();
 
-    do {                           /* loop forever */
-       lcd_clrscr();   /* clear display home cursor */       
+    do {                          
+       lcd_clrscr();   /* clear display home cursor */
        print_score();
 	   print_lives();
 	   if(!mole_hit)
@@ -276,52 +214,52 @@ int main(void)
 	   _delay_ms(100); 
 	   PORTB=PINC; 
 	   if (next == 1) {
-	   	if (!(PINC & (1<<PC0)) && mole_position == 0 && mole_hit == 0)
+	   	if (!(PINC & (1<<PC0)) && mole_position == 14 && mole_hit == 0)
 	   	{
 		   	mole_hit = 1;
 		   	score = score + 1;
 			   next = 0;
 	   	}
-	   	else if (!(PINC & (1<<PC1)) && mole_position == 2 && mole_hit == 0)
+	   	else if (!(PINC & (1<<PC1)) && mole_position == 12 && mole_hit == 0)
 	   	{
 		   	mole_hit = 1;
 		   	score = score + 1;
 			   next = 0;
 	   	}
-	   	else if (!(PINC & (1<<PC2)) && mole_position == 4 && mole_hit == 0)
+	   	else if (!(PINC & (1<<PC2)) && mole_position == 10 && mole_hit == 0)
 	   	{
 		   	mole_hit = 1;
 		   	score = score + 1;
 			   next = 0;
 	   	}
-	   	else if (!(PINC & (1<<PC3)) && mole_position == 6 && mole_hit == 0)
+	   	else if (!(PINC & (1<<PC3)) && mole_position == 8 && mole_hit == 0)
 	   	{
 		   	mole_hit = 1;
 		   	score = score + 1;
 			   next = 0;
 	   	}
-	   	else if (!(PINC & (1<<PC4)) && mole_position == 8 && mole_hit == 0)
+	   	else if (!(PINC & (1<<PC4)) && mole_position == 6 && mole_hit == 0)
 	   	{
 		   	mole_hit = 1;
 		   	score = score + 1;
 			   next = 0;
 	   	}
-	   	else if (!(PINC & (1<<PC5)) && mole_position == 10 && mole_hit == 0)
+	   	else if (!(PINC & (1<<PC5)) && mole_position == 4 && mole_hit == 0)
 	   	{
 		   	mole_hit = 1;
 		   	score = score + 1;
 	   	}
-	   	else if (!(PINC & (1<<PC6)) && mole_position == 12 && mole_hit == 0)
+	   	else if (!(PINC & (1<<PC6)) && mole_position == 2 && mole_hit == 0)
 	   	{
 		   	mole_hit = 1;
 		   	score = score + 1;
-			   next = 0;
+			next = 0;
 	   	}
-	   	else if (!(PINC & (1<<PC7)) && mole_position == 14 && mole_hit == 0)
+	   	else if (!(PINC & (1<<PC7)) && mole_position == 0 && mole_hit == 0)
 	   	{
 		   	mole_hit = 1;
 		   	score = score + 1;
-			   next = 0;
+			next = 0;
 	   	}
 		else if ((PINC & (1<<PC0)) && (PINC & (1<<PC1)) && (PINC & (1<<PC2)) && (PINC & (1<<PC3))
 		&& (PINC & (1<<PC4)) && (PINC & (1<<PC5)) && (PINC & (1<<PC6)) && (PINC & (1<<PC7)))
